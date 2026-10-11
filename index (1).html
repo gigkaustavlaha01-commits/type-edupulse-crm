@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EduPulse CRM - Sales & Student Retention Portal</title>
+  <meta name="description" content="EduPulse student retention CRM demo with dashboard, student directory, at-risk watchlist and counseling logs.">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#f0f7ff',
+              100: '#e0effe',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              900: '#1e3a8a',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    .dark ::-webkit-scrollbar-thumb {
+      background: #475569;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    body {
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans antialiased min-h-screen flex flex-col">
+
+  <div style="background:#fef3c7;color:#78350f;padding:9px 16px;text-align:center;font:600 12px Arial,sans-serif">Demo website — sample student data only. Records are stored in this browser, not a secure shared database.</div>
+  <!-- Toast Notifications Container -->
+  <div id="toastContainer" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <header class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30 shadow-sm transition-colors">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        
+        <!-- Brand Logo -->
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/30">
+            <i class="fa-solid fa-graduation-cap text-xl"></i>
+          </div>
+          <div>
+            <h1 class="font-extrabold text-lg leading-tight tracking-wide flex items-center gap-2">
+              EduPulse <span class="text-blue-600 dark:text-blue-400">CRM</span>
+              <span class="text-[10px] uppercase font-bold bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-700/50 px-2 py-0.5 rounded-full">Pro</span>
+            </h1>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Sales & Student Retention Portal</p>
+          </div>
+        </div>
+
+        <!-- Desktop Navigation Tabs -->
+        <nav class="hidden md:flex space-x-1">
+          <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-tab px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 bg-blue-600 text-white shadow-md shadow-blue-500/20 flex items-center gap-2">
+            <i class="fa-solid fa-chart-pie"></i> Dashboard
+          </button>
+          <button onclick="switchTab('students')" id="nav-students" class="nav-tab px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2">
+            <i class="fa-solid fa-user-graduate"></i> Students
+          </button>
+          <button onclick="switchTab('alerts')" id="nav-alerts" class="nav-tab px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2 relative">
+            <i class="fa-solid fa-triangle-exclamation text-amber-500"></i> At-Risk Watchlist
+            <span id="alertBadge" class="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full font-bold ml-1">0</span>
+          </button>
+          <button onclick="switchTab('call-logs')" id="nav-call-logs" class="nav-tab px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2">
+            <i class="fa-solid fa-headset text-indigo-500"></i> Call Logs
+          </button>
+        </nav>
+
+        <!-- Actions & Theme Toggle -->
+        <div class="flex items-center space-x-2 sm:space-x-3">
+          <button onclick="toggleTheme()" class="p-2 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition text-sm" title="Toggle Theme">
+            <i id="themeIcon" class="fa-solid fa-moon"></i>
+          </button>
+          
+          <button onclick="openStudentModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-2 rounded-xl text-sm font-medium shadow-md shadow-blue-500/20 transition flex items-center gap-2">
+            <i class="fa-solid fa-plus"></i> <span class="hidden sm:inline">Add Student</span>
+          </button>
+          
+          <button onclick="exportToCSV()" class="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 px-3 py-2 rounded-xl text-sm font-medium border border-slate-200 dark:border-slate-700 transition flex items-center gap-1.5" title="Export Data">
+            <i class="fa-solid fa-file-csv text-emerald-600 dark:text-emerald-400 text-base"></i> <span class="hidden lg:inline">Export</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile Navigation Bar -->
+    <div class="md:hidden flex border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-2 py-2 justify-around">
+      <button onclick="switchTab('dashboard')" id="mobile-nav-dashboard" class="mobile-nav-tab text-xs font-semibold px-3 py-1.5 rounded-lg text-white bg-blue-600 flex items-center gap-1">
+        <i class="fa-solid fa-chart-pie"></i> Dash
+      </button>
+      <button onclick="switchTab('students')" id="mobile-nav-students" class="mobile-nav-tab text-xs font-medium px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-300 flex items-center gap-1">
+        <i class="fa-solid fa-user-graduate"></i> Students
+      </button>
+      <button onclick="switchTab('alerts')" id="mobile-nav-alerts" class="mobile-nav-tab text-xs font-medium px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-300 flex items-center gap-1">
+        <i class="fa-solid fa-triangle-exclamation text-amber-500"></i> Risk (<span id="mobileAlertCount">0</span>)
+      </button>
+      <button onclick="switchTab('call-logs')" id="mobile-nav-call-logs" class="mobile-nav-tab text-xs font-medium px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-300 flex items-center gap-1">
+        <i class="fa-solid fa-headset text-indigo-500"></i> Calls
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <section class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      
+      <!-- Total Active -->
+      <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm transition hover:shadow-md">
+        <div class="flex justify-between items-start">
+          <span class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Active</span>
+          <div class="p-2 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"><i class="fa-solid fa-users"></i></div>
+        </div>
+        <div class="mt-2 flex items-baseline justify-between">
+          <span id="kpiTotalActive" class="text-2xl font-extrabold text-slate-900 dark:text-white">0</span>
+          <span class="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold"><i class="fa-solid fa-arrow-up"></i> +8.2%</span>
+        </div>
+      </div>
+
+      <!-- Retention Rate -->
+      <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm transition hover:shadow-md">
+        <div class="flex justify-between items-start">
+          <span class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Retention Rate</span>
+          <div class="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400"><i class="fa-solid fa-chart-line"></i></div>
+        </div>
+        <div class="mt-2 flex items-baseline justify-between">
+          <span id="kpiRetentionRate" class="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">0%</span>
+          <span class="text-[10px] text-slate-400 font-medium">Target: 85%</span>
+        </div>
+      </div>
+
+      <!-- High Retention -->
+      <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm transition hover:shadow-md border-l-4 border-l-emerald-500">
+        <div class="flex justify-between items-start">
+          <span class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">High Retention</span>
+          <span class="flex h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+        </div>
+        <div class="mt-2 flex items-baseline justify-between">
+          <span id="kpiHighCount" class="text-2xl font-extrabold text-slate-900 dark:text-white">0</span>
+          <span id="kpiHighPct" class="text-[11px] text-slate-500 dark:text-slate-400 font-medium">0%</span>
+        </div>
+      </div>
+
+      <!-- At-Risk Count -->
+      <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm transition hover:shadow-md border-l-4 border-l-amber-500">
+        <div class="flex justify-between items-start">
+          <span class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">At-Risk Count</span>
+          <span class="flex h-2.5 w-2.5 rounded-full bg-amber-500"></span>
+        </div>
+        <div class="mt-2 flex items-baseline justify-between">
+          <span id="kpiRiskCount" class="text-2xl font-extrabold text-slate-900 dark:text-white">0</span>
+          <span id="kpiRiskPct" class="text-[11px] text-amber-600 dark:text-amber-400 font-bold">Action Needed</span>
+        </div>
+      </div>
+
+      <!-- Churned Count -->
+      <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm transition hover:shadow-md border-l-4 border-l-red-500">
+        <div class="flex justify-between items-start">
+          <span class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Churned</span>
+          <span class="flex h-2.5 w-2.5 rounded-full bg-red-500"></span>
+        </div>
+        <div class="mt-2 flex items-baseline justify-between">
+          <span id="kpiChurnCount" class="text-2xl font-extrabold text-slate-900 dark:text-white">0</span>
+          <span id="kpiChurnPct" class="text-[11px] text-red-500 font-medium">0%</span>
+        </div>
+      </div>
+
+      <!-- Pipeline Fee Value -->
+      <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm transition hover:shadow-md">
+        <div class="flex justify-between items-start">
+          <span class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Pipeline Fee</span>
+          <div class="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400"><i class="fa-solid fa-indian-rupee-sign"></i></div>
+        </div>
+        <div class="mt-2">
+          <span id="kpiRenewalValue" class="text-xl font-extrabold text-indigo-600 dark:text-indigo-400">₹0</span>
+          <p class="text-[10px] text-slate-400 mt-0.5">Active subscriptions</p>
+        </div>
+      </div>
+
+    </section>
+
+    <div id="tab-dashboard" class="tab-content space-y-6">
+      
+      <!-- Top Analytics Charts Row -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Retention Breakdown Doughnut Chart -->
+        <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between">
+          <div class="flex justify-between items-center mb-4">
+            <div>
+              <h3 class="font-bold text-slate-900 dark:text-white text-base">Retention Status Breakdown</h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Distribution of current student cohorts</p>
+            </div>
+            <span class="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-semibold px-2.5 py-1 rounded-lg">Realtime</span>
+          </div>
+          <div class="relative flex-grow flex items-center justify-center min-h-[220px]">
+            <canvas id="retentionPieChart"></canvas>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 grid grid-cols-3 text-center text-xs font-medium">
+            <div><span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 mr-1"></span>High</div>
+            <div><span class="inline-block w-2.5 h-2.5 rounded-full bg-amber-500 mr-1"></span>At-Risk</div>
+            <div><span class="inline-block w-2.5 h-2.5 rounded-full bg-red-500 mr-1"></span>Churned</div>
+          </div>
+        </div>
+
+        <!-- Line Chart: Trends vs Outreach Calls -->
+        <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm lg:col-span-2 flex flex-col justify-between">
+          <div class="flex justify-between items-center mb-4">
+            <div>
+              <h3 class="font-bold text-slate-900 dark:text-white text-base">Retention % vs Outreach Calls</h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Impact of student counseling calls on retention rates</p>
+            </div>
+            <span class="text-xs border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-medium">6 Month History</span>
+          </div>
+          <div class="relative flex-grow min-h-[230px]">
+            <canvas id="trendsChart"></canvas>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Bottom Analytics & Upcoming Renewals -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Batch Enrollment Bar Chart -->
+        <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm lg:col-span-2">
+          <div class="flex justify-between items-center mb-4">
+            <div>
+              <h3 class="font-bold text-slate-900 dark:text-white text-base">Batch & Course Enrollment Breakdown</h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Distribution of active students across academic programs</p>
+            </div>
+          </div>
+          <div class="relative min-h-[220px]">
+            <canvas id="courseBarChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Expiring Subscriptions Priority Panel -->
+        <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between">
+          <div>
+            <div class="flex justify-between items-center mb-3">
+              <h3 class="font-bold text-slate-900 dark:text-white text-base flex items-center gap-2">
+                <i class="fa-solid fa-clock-rotate-left text-amber-500"></i> Expiring Subscriptions
+              </h3>
+              <span class="text-[10px] bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 px-2 py-0.5 rounded-full font-bold">Upcoming</span>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mb-3">Students whose subscription access ends soon.</p>
+
+            <div id="quickRenewalsList" class="space-y-2 overflow-y-auto max-h-[210px] pr-1">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <button onclick="switchTab('alerts')" class="mt-4 w-full py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-xl transition text-center">
+            Open At-Risk Watchlist <i class="fa-solid fa-arrow-right ml-1"></i>
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+
+    <div id="tab-students" class="tab-content hidden space-y-4">
+      
+      <!-- Filter Controls Header -->
+      <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col md:flex-row gap-3 items-center justify-between">
+        
+        <!-- Search -->
+        <div class="relative w-full md:w-80">
+          <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+          <input type="text" id="searchInput" onkeyup="filterStudents()" placeholder="Search student name, ID, or phone..." class="w-full pl-9 pr-4 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition">
+        </div>
+
+        <!-- Filter Dropdowns -->
+        <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
+          
+          <select id="statusFilter" onchange="filterStudents()" class="px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-medium">
+            <option value="ALL">All Retention Categories</option>
+            <option value="High Retention">🟢 High Retention</option>
+            <option value="At-Risk">🟡 At-Risk / Moderate</option>
+            <option value="Churned">🔴 Churned</option>
+          </select>
+
+          <select id="courseFilter" onchange="filterStudents()" class="px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-medium">
+            <option value="ALL">All Courses / Batches</option>
+            <option value="NEET 2026 Repeater">NEET 2026 Repeater</option>
+            <option value="JEE Main Express">JEE Main Express</option>
+            <option value="Foundation Class 10">Foundation Class 10</option>
+            <option value="Class 12 Boards Plus">Class 12 Boards Plus</option>
+          </select>
+
+          <button onclick="resetFilters()" class="px-3.5 py-2 text-sm text-slate-600 dark:text-slate-300 hover:text-slate-900 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition font-medium flex items-center gap-1.5">
+            <i class="fa-solid fa-rotate-left"></i> Reset
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Main CRM Directory Table -->
+      <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-sm">
+            <thead>
+              <tr class="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                <th class="py-3.5 px-4">Student Info</th>
+                <th class="py-3.5 px-4">Course Track</th>
+                <th class="py-3.5 px-4">Attendance</th>
+                <th class="py-3.5 px-4">Test Avg</th>
+                <th class="py-3.5 px-4">Engagement</th>
+                <th class="py-3.5 px-4">Status</th>
+                <th class="py-3.5 px-4">Expiry Date</th>
+                <th class="py-3.5 px-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="studentTableBody" class="divide-y divide-slate-100 dark:divide-slate-800 font-normal text-slate-700 dark:text-slate-300">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex flex-col sm:flex-row justify-between items-center text-xs text-slate-500 dark:text-slate-400 gap-2">
+          <span>Showing <strong id="showingCount" class="text-slate-800 dark:text-slate-200">0</strong> student records</span>
+          <span>Data persists in LocalStorage</span>
+        </div>
+      </div>
+
+    </div>
+
+    <div id="tab-alerts" class="tab-content hidden space-y-4">
+      
+      <!-- Watchlist Banner -->
+      <div class="bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-red-500/10 border border-amber-200 dark:border-amber-900/40 rounded-2xl p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h2 class="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <i class="fa-solid fa-triangle-exclamation text-amber-500"></i> At-Risk Student Watchlist
+          </h2>
+          <p class="text-xs text-slate-600 dark:text-slate-400 mt-1">Students flagged automatically due to low engagement (&lt; 6/10) or low attendance (&lt; 65%).</p>
+        </div>
+        <button onclick="triggerBulkCounselingNotice()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-md shadow-amber-500/20 transition flex items-center gap-2">
+          <i class="fa-solid fa-paper-plane"></i> Send Bulk Retention Reminders
+        </button>
+      </div>
+
+      <!-- At-Risk Cards Grid -->
+      <div id="alertGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <!-- Dynamically populated -->
+      </div>
+
+    </div>
+
+    <div id="tab-call-logs" class="tab-content hidden space-y-4">
+      <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        <div class="flex justify-between items-center mb-4">
+          <div>
+            <h2 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <i class="fa-solid fa-headset text-indigo-500"></i> Counseling Call Audit Log
+            </h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Chronological history of student counseling interactions and retention notes</p>
+          </div>
+        </div>
+
+        <div id="masterCallLogsContainer" class="space-y-3">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <div id="detailDrawerOverlay" onclick="closeDetailDrawer()" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 hidden transition-opacity"></div>
+  
+  <aside id="detailDrawer" class="fixed top-0 right-0 bottom-0 w-full max-w-md bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 z-50 shadow-2xl transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col justify-between">
+    <div>
+      <div class="bg-slate-900 text-white px-6 py-4 flex justify-between items-center">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-id-card text-blue-400"></i>
+          <h3 class="font-bold text-base">Student Profile Drawer</h3>
+        </div>
+        <button onclick="closeDetailDrawer()" class="text-slate-400 hover:text-white transition">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div id="drawerContent" class="p-6 space-y-5 text-sm overflow-y-auto max-h-[calc(100vh-120px)]">
+        <!-- Dynamic profile content -->
+      </div>
+    </div>
+
+    <div class="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/80 flex gap-2">
+      <button id="drawerCallBtn" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 rounded-xl transition text-xs flex items-center justify-center gap-2">
+        <i class="fa-solid fa-headset"></i> Log Counseling Call
+      </button>
+      <button id="drawerEditBtn" class="bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold px-4 py-2.5 rounded-xl transition text-xs">
+        Edit
+      </button>
+    </div>
+  </aside>
+
+  <!-- Student Add/Edit Modal -->
+  <div id="studentModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 max-w-lg w-full overflow-hidden">
+      <div class="bg-slate-900 px-6 py-4 flex justify-between items-center text-white">
+        <h3 id="modalTitle" class="font-bold text-base flex items-center gap-2">
+          <i class="fa-solid fa-user-plus text-blue-400"></i> Add New Student
+        </h3>
+        <button onclick="closeStudentModal()" class="text-slate-400 hover:text-white transition">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <form id="studentForm" onsubmit="saveStudent(event)" class="p-6 space-y-4 text-sm">
+        <input type="hidden" id="studentId">
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Full Name *</label>
+            <input type="text" id="formName" required placeholder="e.g. Rahul Sharma" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Phone Number *</label>
+            <input type="tel" id="formPhone" required placeholder="+91 98765 43210" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Course / Batch</label>
+            <select id="formCourse" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none">
+              <option value="NEET 2026 Repeater">NEET 2026 Repeater</option>
+              <option value="JEE Main Express">JEE Main Express</option>
+              <option value="Foundation Class 10">Foundation Class 10</option>
+              <option value="Class 12 Boards Plus">Class 12 Boards Plus</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Expiry Date *</label>
+            <input type="date" id="formExpiry" required class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Attendance %</label>
+            <input type="number" id="formAttendance" min="0" max="100" value="85" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Test Avg %</label>
+            <input type="number" id="formTestAvg" min="0" max="100" value="78" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Engagement (1-10)</label>
+            <input type="number" id="formEngagement" min="1" max="10" value="8" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Retention Category</label>
+            <select id="formCategory" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none">
+              <option value="High Retention">🟢 High Retention</option>
+              <option value="At-Risk">🟡 At-Risk / Moderate</option>
+              <option value="Churned">🔴 Churned</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Course Fee (₹)</label>
+            <input type="number" id="formFee" value="25000" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none">
+          </div>
+        </div>
+
+        <div class="pt-4 flex justify-end gap-2 border-t border-slate-100 dark:border-slate-800">
+          <button type="button" onclick="closeStudentModal()" class="px-4 py-2 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition font-medium">Cancel</button>
+          <button type="submit" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium shadow-md shadow-blue-500/20 transition">Save Student</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Counseling Call Modal -->
+  <div id="callModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 max-w-lg w-full overflow-hidden">
+      <div class="bg-slate-900 px-6 py-4 flex justify-between items-center text-white">
+        <h3 class="font-bold text-base flex items-center gap-2">
+          <i class="fa-solid fa-headset text-emerald-400"></i> Log Counseling Call
+        </h3>
+        <button onclick="closeCallModal()" class="text-slate-400 hover:text-white transition">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="p-6 space-y-4 text-sm">
+        <div class="bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900/50 rounded-xl p-3 flex justify-between items-center">
+          <div>
+            <h4 id="callStudentName" class="font-bold text-slate-800 dark:text-slate-200">Student Name</h4>
+            <p id="callStudentMeta" class="text-xs text-slate-500 dark:text-slate-400">Course - Contact</p>
+          </div>
+          <span id="callStudentBadge" class="text-xs px-2.5 py-1 rounded-full font-semibold">Status</span>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Call Outcome</label>
+          <select id="callOutcome" class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none">
+            <option value="Renewed / Extended">🟢 Renewed / Access Extended</option>
+            <option value="Counseling Done">🟡 Retention Counseling Completed</option>
+            <option value="Follow-up Needed">🟠 Backlog / Doubt Issue - Follow-up Needed</option>
+            <option value="Unresponsive">⚪ Unresponsive / Call Disconnected</option>
+            <option value="Discontinued">🔴 Discontinued / Churned</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Counseling Notes</label>
+          <textarea id="callNotes" rows="3" placeholder="Enter conversation summary or action items..." class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"></textarea>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Previous History</label>
+          <div id="callHistoryList" class="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl p-3 max-h-32 overflow-y-auto space-y-2 text-xs">
+            <!-- Dynamic call history -->
+          </div>
+        </div>
+
+        <div class="pt-3 flex justify-end gap-2 border-t border-slate-100 dark:border-slate-800">
+          <button type="button" onclick="closeCallModal()" class="px-4 py-2 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition">Cancel</button>
+          <button type="button" onclick="saveCallLog()" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-medium shadow-md shadow-emerald-500/20 transition">Save Log</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const defaultStudents = [
+      { id: 'STU-1001', name: 'Aarav Mehta', phone: '+91 98201 11223', course: 'NEET 2026 Repeater', attendance: 92, testAvg: 88, engagement: 9, category: 'High Retention', expiry: '2026-11-15', lastCall: '2026-09-28', fee: 35000, history: ['2026-09-28: [Counseling Done] High attendance in mock tests. Target NEET rank set.'] },
+      { id: 'STU-1002', name: 'Priya Sharma', phone: '+91 97112 33445', course: 'JEE Main Express', attendance: 88, testAvg: 82, engagement: 8, category: 'High Retention', expiry: '2026-12-01', lastCall: '2026-10-02', fee: 28000, history: ['2026-10-02: [Counseling Done] Target score set for upcoming math test.'] },
+      { id: 'STU-1003', name: 'Rohan Gupta', phone: '+91 98334 55667', course: 'Foundation Class 10', attendance: 60, testAvg: 54, engagement: 4, category: 'At-Risk', expiry: '2026-10-20', lastCall: '2026-09-15', fee: 22000, history: ['2026-09-15: [Follow-up Needed] Student absent for 3 consecutive lectures. Parent call scheduled.'] },
+      { id: 'STU-1004', name: 'Ananya Verma', phone: '+91 99445 66778', course: 'Class 12 Boards Plus', attendance: 45, testAvg: 48, engagement: 3, category: 'At-Risk', expiry: '2026-10-18', lastCall: '2026-09-10', fee: 20000, history: ['2026-09-10: [Follow-up Needed] Backlog in chemistry. Offered 1-on-1 doubt session.'] },
+      { id: 'STU-1005', name: 'Kabir Das', phone: '+91 96556 77889', course: 'NEET 2026 Repeater', attendance: 30, testAvg: 35, engagement: 2, category: 'Churned', expiry: '2026-08-30', lastCall: '2026-08-20', fee: 35000, history: ['2026-08-20: [Discontinued] Discontinued online package to join local offline classes.'] },
+      { id: 'STU-1006', name: 'Sneha Patel', phone: '+91 95667 88990', course: 'JEE Main Express', attendance: 95, testAvg: 91, engagement: 10, category: 'High Retention', expiry: '2027-01-10', lastCall: '2026-10-05', fee: 30000, history: ['2026-10-05: [Renewed / Extended] Batch topper in September test. Renewal confirmed.'] },
+      { id: 'STU-1007', name: 'Vikram Singh', phone: '+91 94778 99001', course: 'Foundation Class 10', attendance: 55, testAvg: 58, engagement: 5, category: 'At-Risk', expiry: '2026-10-25', lastCall: '2026-09-22', fee: 22000, history: ['2026-09-22: [Follow-up Needed] Sent math worksheets to improve test score.'] },
+      { id: 'STU-1008', name: 'Diya Choudhury', phone: '+91 93889 00112', course: 'Class 12 Boards Plus', attendance: 90, testAvg: 85, engagement: 8, category: 'High Retention', expiry: '2026-11-30', lastCall: '2026-09-30', fee: 20000, history: ['2026-09-30: [Counseling Done] Homework regularity verified.'] }
+    ];
+
+    let students = [];
+    let currentCallStudentId = null;
+    let pieChart, lineChart, barChart;
+
+    function loadStudents() {
+      const stored = localStorage.getItem('edupulse_crm_students');
+      if (stored) {
+        try {
+          students = JSON.parse(stored);
+        } catch(e) {
+          students = [...defaultStudents];
+        }
+      } else {
+        students = [...defaultStudents];
+        saveToLocalStorage();
+      }
+    }
+
+    function saveToLocalStorage() {
+      localStorage.setItem('edupulse_crm_students', JSON.stringify(students));
+    }
+
+    function initTheme() {
+      const savedTheme = localStorage.getItem('edupulse_theme') || 'light';
+      if (savedTheme === 'dark') {
+        document.documentElement.classList.add('dark');
+        document.getElementById('themeIcon').className = 'fa-solid fa-sun text-amber-400';
+      } else {
+        document.documentElement.classList.remove('dark');
+        document.getElementById('themeIcon').className = 'fa-solid fa-moon';
+      }
+    }
+
+    function toggleTheme() {
+      const isDark = document.documentElement.classList.toggle('dark');
+      localStorage.setItem('edupulse_theme', isDark ? 'dark' : 'light');
+      document.getElementById('themeIcon').className = isDark ? 'fa-solid fa-sun text-amber-400' : 'fa-solid fa-moon';
+      renderCharts();
+    }
+
+    window.onload = function() {
+      initTheme();
+      loadStudents();
+      refreshAllViews();
+    };
+
+    function showToast(message, type = 'success') {
+      const toast = document.createElement('div');
+      const bgColor = type === 'success' ? 'bg-emerald-600' : type === 'warning' ? 'bg-amber-600' : 'bg-blue-600';
+      toast.className = `${bgColor} text-white px-4 py-3 rounded-xl shadow-lg font-medium text-sm flex items-center gap-2 transform transition-all duration-300 translate-y-2 pointer-events-auto z-50`;
+      toast.innerHTML = `<i class="fa-solid ${type === 'success' ? 'fa-circle-check' : 'fa-circle-info'}"></i> ${message}`;
+      
+      const container = document.getElementById('toastContainer');
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-[-10px]');
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+
+      document.querySelectorAll('.nav-tab').forEach(btn => {
+        btn.classList.remove('bg-blue-600', 'text-white', 'shadow-md', 'shadow-blue-500/20');
+        btn.classList.add('text-slate-600', 'dark:text-slate-300', 'hover:bg-slate-100', 'dark:hover:bg-slate-800');
+      });
+      const activeNav = document.getElementById(`nav-${tabId}`);
+      if (activeNav) {
+        activeNav.classList.add('bg-blue-600', 'text-white', 'shadow-md', 'shadow-blue-500/20');
+        activeNav.classList.remove('text-slate-600', 'dark:text-slate-300', 'hover:bg-slate-100', 'dark:hover:bg-slate-800');
+      }
+
+      document.querySelectorAll('.mobile-nav-tab').forEach(btn => {
+        btn.classList.remove('bg-blue-600', 'text-white');
+        btn.classList.add('text-slate-600', 'dark:text-slate-300');
+      });
+      const activeMobileNav = document.getElementById(`mobile-nav-${tabId}`);
+      if (activeMobileNav) {
+        activeMobileNav.classList.add('bg-blue-600', 'text-white');
+        activeMobileNav.classList.remove('text-slate-600', 'dark:text-slate-300');
+      }
+    }
+
+    function renderKPIs() {
+      const total = students.length;
+      const high = students.filter(s => s.category === 'High Retention').length;
+      const risk = students.filter(s => s.category === 'At-Risk').length;
+      const churned = students.filter(s => s.category === 'Churned').length;
+
+      const retentionRate = total > 0 ? ((high / total) * 100).toFixed(1) : 0;
+      const totalRenewalValue = students
+        .filter(s => s.category !== 'Churned')
+        .reduce((sum, s) => sum + (s.fee || 25000), 0);
+
+      document.getElementById('kpiTotalActive').innerText = total;
+      document.getElementById('kpiRetentionRate').innerText = `${retentionRate}%`;
+      document.getElementById('kpiHighCount').innerText = high;
+      document.getElementById('kpiHighPct').innerText = `${((high/total)*100 || 0).toFixed(0)}% of total`;
+      
+      document.getElementById('kpiRiskCount').innerText = risk;
+      document.getElementById('kpiRiskPct').innerText = `${risk} Needs Action`;
+      
+      document.getElementById('kpiChurnCount').innerText = churned;
+      document.getElementById('kpiChurnPct').innerText = `${((churned/total)*100 || 0).toFixed(0)}% churn`;
+
+      document.getElementById('kpiRenewalValue').innerText = `₹${(totalRenewalValue).toLocaleString('en-IN')}`;
+
+      document.getElementById('alertBadge').innerText = risk;
+      document.getElementById('mobileAlertCount').innerText = risk;
+    }
+
+    function renderCharts() {
+      const isDark = document.documentElement.classList.contains('dark');
+      const textColor = isDark ? '#94a3b8' : '#64748b';
+      const gridColor = isDark ? 'rgba(148, 163, 184, 0.1)' : 'rgba(226, 232, 240, 0.8)';
+
+      const high = students.filter(s => s.category === 'High Retention').length;
+      const risk = students.filter(s => s.category === 'At-Risk').length;
+      const churned = students.filter(s => s.category === 'Churned').length;
+
+      // 1. Doughnut Chart
+      const ctxPie = document.getElementById('retentionPieChart').getContext('2d');
+      if (pieChart) pieChart.destroy();
+      pieChart = new Chart(ctxPie, {
+        type: 'doughnut',
+        data: {
+          labels: ['High Retention', 'At-Risk', 'Churned'],
+          datasets: [{
+            data: [high, risk, churned],
+            backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
+            borderWidth: 2,
+            borderColor: isDark ? '#0f172a' : '#ffffff'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          cutout: '72%'
+        }
+      });
+
+      // 2. Line Chart
+      const ctxLine = document.getElementById('trendsChart').getContext('2d');
+      if (lineChart) lineChart.destroy();
+      lineChart = new Chart(ctxLine, {
+        type: 'line',
+        data: {
+          labels: ['May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct'],
+          datasets: [
+            {
+              label: 'Retention Rate %',
+              data: [72, 75, 78, 81, 84, Math.round((high/(students.length||1))*100)],
+              borderColor: '#2563eb',
+              backgroundColor: 'rgba(37, 99, 235, 0.1)',
+              fill: true,
+              tension: 0.35
+            },
+            {
+              label: 'Outreach Calls Logged',
+              data: [12, 18, 25, 22, 30, 28],
+              borderColor: '#f59e0b',
+              borderDash: [4, 4],
+              fill: false,
+              tension: 0.35
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'top', labels: { color: textColor } } },
+          scales: {
+            x: { ticks: { color: textColor }, grid: { color: gridColor } },
+            y: { beginAtZero: true, ticks: { color: textColor }, grid: { color: gridColor } }
+          }
+        }
+      });
+
+      // 3. Bar Chart
+      const courses = ['NEET 2026 Repeater', 'JEE Main Express', 'Foundation Class 10', 'Class 12 Boards Plus'];
+      const courseCounts = courses.map(c => students.filter(s => s.course === c).length);
+
+      const ctxBar = document.getElementById('courseBarChart').getContext('2d');
+      if (barChart) barChart.destroy();
+      barChart = new Chart(ctxBar, {
+        type: 'bar',
+        data: {
+          labels: ['NEET Repeater', 'JEE Express', 'Foundation 10', 'Boards 12 Plus'],
+          datasets: [{
+            label: 'Active Students',
+            data: courseCounts,
+            backgroundColor: ['#3b82f6', '#6366f1', '#8b5cf6', '#ec4899'],
+            borderRadius: 8
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { color: textColor }, grid: { color: gridColor } },
+            y: { ticks: { color: textColor }, grid: { display: false } }
+          }
+        }
+      });
+    }
+
+    function renderStudentTable(dataToRender = students) {
+      const tbody = document.getElementById('studentTableBody');
+      tbody.innerHTML = '';
+
+      if (dataToRender.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-8 text-slate-400 font-medium">No student records found matching your filters.</td></tr>`;
+        document.getElementById('showingCount').innerText = 0;
+        return;
+      }
+
+      dataToRender.forEach(student => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition duration-150';
+
+        let badgeClass = 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800';
+        let badgeDot = 'bg-emerald-500';
+        if (student.category === 'At-Risk') {
+          badgeClass = 'bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800';
+          badgeDot = 'bg-amber-500';
+        } else if (student.category === 'Churned') {
+          badgeClass = 'bg-red-50 dark:bg-red-950/50 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800';
+          badgeDot = 'bg-red-500';
+        }
+
+        tr.innerHTML = `
+          <td class="py-3.5 px-4 font-medium">
+            <button onclick="openDetailDrawer('${student.id}')" class="text-left group">
+              <div class="font-bold text-slate-800 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition">${student.name}</div>
+              <div class="text-xs text-slate-400">${student.id} • ${student.phone}</div>
+            </button>
+          </td>
+          <td class="py-3.5 px-4 text-xs font-semibold text-slate-600 dark:text-slate-300">${student.course}</td>
+          <td class="py-3.5 px-4">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-bold">${student.attendance}%</span>
+              <div class="w-14 bg-slate-200 dark:bg-slate-700 rounded-full h-1.5">
+                <div class="bg-blue-600 h-1.5 rounded-full" style="width: ${student.attendance}%"></div>
+              </div>
+            </div>
+          </td>
+          <td class="py-3.5 px-4 text-xs font-bold text-slate-700 dark:text-slate-300">${student.testAvg || 75}%</td>
+          <td class="py-3.5 px-4">
+            <div class="flex items-center gap-1 font-extrabold text-xs ${student.engagement >= 7 ? 'text-emerald-600 dark:text-emerald-400' : student.engagement >= 5 ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400'}">
+              <i class="fa-solid fa-bolt text-xs"></i> ${student.engagement} / 10
+            </div>
+          </td>
+          <td class="py-3.5 px-4">
+            <span class="inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full border ${badgeClass}">
+              <span class="w-1.5 h-1.5 rounded-full ${badgeDot}"></span>
+              ${student.category}
+            </span>
+          </td>
+          <td class="py-3.5 px-4 text-xs font-semibold text-slate-600 dark:text-slate-300">${student.expiry}</td>
+          <td class="py-3.5 px-4 text-right space-x-1">
+            <button onclick="openDetailDrawer('${student.id}')" class="p-1.5 text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition" title="View Profile">
+              <i class="fa-solid fa-sidebar text-base"></i>
+            </button>
+            <button onclick="openCallModal('${student.id}')" class="p-1.5 text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition" title="Log Call">
+              <i class="fa-solid fa-headset text-base"></i>
+            </button>
+            <button onclick="editStudent('${student.id}')" class="p-1.5 text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition" title="Edit">
+              <i class="fa-solid fa-pen-to-square"></i>
+            </button>
+            <button onclick="deleteStudent('${student.id}')" class="p-1.5 text-slate-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition" title="Delete">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById('showingCount').innerText = dataToRender.length;
+    }
+
+    function filterStudents() {
+      const search = document.getElementById('searchInput').value.toLowerCase();
+      const status = document.getElementById('statusFilter').value;
+      const course = document.getElementById('courseFilter').value;
+
+      const filtered = students.filter(s => {
+        const matchesSearch = s.name.toLowerCase().includes(search) || s.id.toLowerCase().includes(search) || s.phone.includes(search);
+        const matchesStatus = status === 'ALL' || s.category === status;
+        const matchesCourse = course === 'ALL' || s.course === course;
+        return matchesSearch && matchesStatus && matchesCourse;
+      });
+
+      renderStudentTable(filtered);
+    }
+
+    function resetFilters() {
+      document.getElementById('searchInput').value = '';
+      document.getElementById('statusFilter').value = 'ALL';
+      document.getElementById('courseFilter').value = 'ALL';
+      renderStudentTable(students);
+    }
+
+    function renderAlertCenter() {
+      const alertGrid = document.getElementById('alertGrid');
+      alertGrid.innerHTML = '';
+
+      const atRiskStudents = students.filter(s => s.category === 'At-Risk' || s.engagement < 6);
+
+      if (atRiskStudents.length === 0) {
+        alertGrid.innerHTML = `
+          <div class="col-span-full py-12 text-center bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
+            <i class="fa-solid fa-circle-check text-4xl text-emerald-500 mb-2"></i>
+            <p class="text-slate-700 dark:text-slate-200 font-bold">Great! No student is currently flagged on the Watchlist.</p>
+          </div>`;
+        return;
+      }
+
+      atRiskStudents.forEach(student => {
+        const card = document.createElement('div');
+        card.className = 'bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-900/40 rounded-2xl p-4 shadow-sm hover:shadow-md transition flex flex-col justify-between';
+        
+        card.innerHTML = `
+          <div>
+            <div class="flex justify-between items-start mb-2">
+              <div>
+                <h4 class="font-bold text-slate-800 dark:text-slate-100 text-sm">${student.name}</h4>
+                <p class="text-xs text-slate-400">${student.id} • ${student.course}</p>
+              </div>
+              <span class="bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 text-[10px] font-bold px-2 py-0.5 rounded-full">Score: ${student.engagement}/10</span>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2 my-3 bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-xl text-xs text-center">
+              <div>
+                <span class="text-slate-400 block text-[10px]">Attendance</span>
+                <span class="font-bold text-slate-700 dark:text-slate-200">${student.attendance}%</span>
+              </div>
+              <div>
+                <span class="text-slate-400 block text-[10px]">Test Avg</span>
+                <span class="font-bold text-slate-700 dark:text-slate-200">${student.testAvg || 70}%</span>
+              </div>
+              <div>
+                <span class="text-slate-400 block text-[10px]">Expiry</span>
+                <span class="font-bold text-slate-700 dark:text-slate-200">${student.expiry}</span>
+              </div>
+            </div>
+
+            <p class="text-xs text-slate-600 dark:text-slate-400 mb-4 bg-amber-50/60 dark:bg-amber-950/30 p-2.5 rounded-xl border border-amber-100 dark:border-amber-900/30 italic">
+              "${student.history && student.history.length > 0 ? student.history[0] : 'No recent outreach notes.'}"
+            </p>
+          </div>
+
+          <div class="flex gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+            <button onclick="openCallModal('${student.id}')" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2 rounded-xl transition flex items-center justify-center gap-1.5">
+              <i class="fa-solid fa-headset"></i> Counsel Call
+            </button>
+            <a href="https://wa.me/${student.phone.replace(/[^0-9]/g, '')}" target="_blank" class="px-3 bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-200 dark:hover:bg-emerald-900 text-xs font-bold py-2 rounded-xl transition flex items-center justify-center">
+              <i class="fa-brands fa-whatsapp text-sm"></i>
+            </a>
+          </div>
+        `;
+        alertGrid.appendChild(card);
+      });
+    }
+
+    function renderQuickRenewals() {
+      const list = document.getElementById('quickRenewalsList');
+      list.innerHTML = '';
+
+      const upcoming = students.filter(s => s.category !== 'Churned').slice(0, 4);
+
+      upcoming.forEach(student => {
+        const item = document.createElement('div');
+        item.className = 'flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-800 transition text-xs';
+        item.innerHTML = `
+          <div>
+            <div class="font-bold text-slate-800 dark:text-slate-200">${student.name}</div>
+            <div class="text-[10px] text-slate-400">Expires: ${student.expiry}</div>
+          </div>
+          <button onclick="openCallModal('${student.id}')" class="px-2.5 py-1 bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 hover:bg-blue-100 rounded-lg font-bold transition">
+            Call
+          </button>
+        `;
+        list.appendChild(item);
+      });
+    }
+
+    function renderMasterCallLogs() {
+      const container = document.getElementById('masterCallLogsContainer');
+      container.innerHTML = '';
+
+      let allLogs = [];
+      students.forEach(s => {
+        if (s.history) {
+          s.history.forEach(log => {
+            allLogs.push({ studentName: s.name, id: s.id, course: s.course, log: log });
+          });
+        }
+      });
+
+      if (allLogs.length === 0) {
+        container.innerHTML = '<p class="text-xs text-slate-400 text-center py-6">No call logs recorded yet.</p>';
+        return;
+      }
+
+      allLogs.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 text-xs flex justify-between items-start gap-3';
+        div.innerHTML = `
+          <div class="space-y-1">
+            <div class="font-bold text-slate-800 dark:text-slate-200">${item.studentName} <span class="text-slate-400 font-normal">(${item.id} - ${item.course})</span></div>
+            <div class="text-slate-600 dark:text-slate-300">${item.log}</div>
+          </div>
+          <button onclick="openCallModal('${item.id}')" class="text-xs text-blue-600 dark:text-blue-400 hover:underline font-semibold whitespace-nowrap">Log Call</button>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function openDetailDrawer(id) {
+      const student = students.find(s => s.id === id);
+      if (!student) return;
+
+      const content = document.getElementById('drawerContent');
+      content.innerHTML = `
+        <div class="bg-slate-50 dark:bg-slate-800/60 p-4 rounded-xl space-y-2 border border-slate-200 dark:border-slate-700">
+          <div class="flex justify-between items-center">
+            <h4 class="font-bold text-base text-slate-900 dark:text-white">${student.name}</h4>
+            <span class="text-xs font-bold px-2.5 py-1 rounded-full ${student.category === 'High Retention' ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300' : student.category === 'At-Risk' ? 'bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300' : 'bg-red-100 dark:bg-red-950 text-red-800 dark:text-red-300'}">${student.category}</span>
+          </div>
+          <p class="text-xs text-slate-500 dark:text-slate-400">${student.id} • ${student.phone}</p>
+          <p class="text-xs font-semibold text-blue-600 dark:text-blue-400">${student.course}</p>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3 text-center">
+          <div class="p-3 bg-blue-50 dark:bg-blue-900/30 rounded-xl">
+            <span class="text-slate-400 text-[10px] uppercase font-bold block">Attendance</span>
+            <span class="font-extrabold text-blue-600 dark:text-blue-400 text-base">${student.attendance}%</span>
+          </div>
+          <div class="p-3 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl">
+            <span class="text-slate-400 text-[10px] uppercase font-bold block">Test Avg</span>
+            <span class="font-extrabold text-indigo-600 dark:text-indigo-400 text-base">${student.testAvg || 75}%</span>
+          </div>
+          <div class="p-3 bg-emerald-50 dark:bg-emerald-900/30 rounded-xl">
+            <span class="text-slate-400 text-[10px] uppercase font-bold block">Engagement</span>
+            <span class="font-extrabold text-emerald-600 dark:text-emerald-400 text-base">${student.engagement}/10</span>
+          </div>
+        </div>
+
+        <div class="space-y-1">
+          <label class="block text-xs font-bold text-slate-600 dark:text-slate-400">Interaction History & Log Trail</label>
+          <div class="bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 rounded-xl p-3 max-h-56 overflow-y-auto text-xs space-y-2">
+            ${student.history && student.history.length > 0 ? student.history.map(h => `<div class="border-b border-slate-200/60 dark:border-slate-700/60 pb-1.5 text-slate-700 dark:text-slate-300">${h}</div>`).join('') : '<span class="text-slate-400">No logs found.</span>'}
+          </div>
+        </div>
+      `;
+
+      document.getElementById('drawerCallBtn').onclick = () => { closeDetailDrawer(); openCallModal(student.id); };
+      document.getElementById('drawerEditBtn').onclick = () => { closeDetailDrawer(); editStudent(student.id); };
+
+      document.getElementById('detailDrawerOverlay').classList.remove('hidden');
+      document.getElementById('detailDrawer').classList.remove('translate-x-full');
+    }
+
+    function closeDetailDrawer() {
+      document.getElementById('detailDrawer').classList.add('translate-x-full');
+      document.getElementById('detailDrawerOverlay').classList.add('hidden');
+    }
+
+    function openStudentModal(id = null) {
+      const modal = document.getElementById('studentModal');
+      const form = document.getElementById('studentForm');
+      form.reset();
+
+      if (id) {
+        document.getElementById('modalTitle').innerText = 'Edit Student Record';
+        const s = students.find(x => x.id === id);
+        if (s) {
+          document.getElementById('studentId').value = s.id;
+          document.getElementById('formName').value = s.name;
+          document.getElementById('formPhone').value = s.phone;
+          document.getElementById('formCourse').value = s.course;
+          document.getElementById('formExpiry').value = s.expiry;
+          document.getElementById('formAttendance').value = s.attendance;
+          document.getElementById('formTestAvg').value = s.testAvg || 75;
+          document.getElementById('formEngagement').value = s.engagement;
+          document.getElementById('formCategory').value = s.category;
+          document.getElementById('formFee').value = s.fee || 25000;
+        }
+      } else {
+        document.getElementById('modalTitle').innerText = 'Add New Student';
+        document.getElementById('studentId').value = '';
+      }
+
+      modal.classList.remove('hidden');
+    }
+
+    function closeStudentModal() {
+      document.getElementById('studentModal').classList.add('hidden');
+    }
+
+    function saveStudent(e) {
+      e.preventDefault();
+      const id = document.getElementById('studentId').value;
+      const name = document.getElementById('formName').value;
+      const phone = document.getElementById('formPhone').value;
+      const course = document.getElementById('formCourse').value;
+      const expiry = document.getElementById('formExpiry').value;
+      const attendance = parseInt(document.getElementById('formAttendance').value);
+      const testAvg = parseInt(document.getElementById('formTestAvg').value);
+      const engagement = parseInt(document.getElementById('formEngagement').value);
+      const category = document.getElementById('formCategory').value;
+      const fee = parseInt(document.getElementById('formFee').value);
+
+      if (id) {
+        const index = students.findIndex(s => s.id === id);
+        if (index !== -1) {
+          students[index] = { ...students[index], name, phone, course, expiry, attendance, testAvg, engagement, category, fee };
+          showToast('Student record updated successfully!');
+        }
+      } else {
+        const newId = `STU-${1000 + students.length + 1}`;
+        students.unshift({
+          id: newId, name, phone, course, attendance, testAvg, engagement, category, expiry, fee,
+          lastCall: new Date().toISOString().split('T')[0],
+          history: [`${new Date().toISOString().split('T')[0]}: Student enrolled into portal.`]
+        });
+        showToast('New student record saved!');
+      }
+
+      saveToLocalStorage();
+      closeStudentModal();
+      refreshAllViews();
+    }
+
+    function editStudent(id) {
+      openStudentModal(id);
+    }
+
+    function deleteStudent(id) {
+      if (confirm('Are you sure you want to remove this student record?')) {
+        students = students.filter(s => s.id !== id);
+        saveToLocalStorage();
+        showToast('Student record deleted', 'warning');
+        refreshAllViews();
+      }
+    }
+
+    function openCallModal(id) {
+      currentCallStudentId = id;
+      const student = students.find(s => s.id === id);
+      if (!student) return;
+
+      document.getElementById('callStudentName').innerText = student.name;
+      document.getElementById('callStudentMeta').innerText = `${student.course} • ${student.phone}`;
+      
+      const badge = document.getElementById('callStudentBadge');
+      badge.innerText = student.category;
+      badge.className = `text-xs px-2.5 py-1 rounded-full font-bold ${student.category === 'High Retention' ? 'bg-emerald-100 text-emerald-800' : student.category === 'At-Risk' ? 'bg-amber-100 text-amber-800' : 'bg-red-100 text-red-800'}`;
+
+      document.getElementById('callNotes').value = '';
+
+      const historyContainer = document.getElementById('callHistoryList');
+      historyContainer.innerHTML = '';
+      if (student.history && student.history.length > 0) {
+        student.history.forEach(log => {
+          const item = document.createElement('div');
+          item.className = 'text-slate-600 dark:text-slate-300 border-b border-slate-200/50 dark:border-slate-700/50 pb-1.5';
+          item.innerText = log;
+          historyContainer.appendChild(item);
+        });
+      } else {
+        historyContainer.innerHTML = '<span class="text-slate-400">No previous call history.</span>';
+      }
+
+      document.getElementById('callModal').classList.remove('hidden');
+    }
+
+    function closeCallModal() {
+      document.getElementById('callModal').classList.add('hidden');
+      currentCallStudentId = null;
+    }
+
+    function saveCallLog() {
+      if (!currentCallStudentId) return;
+
+      const student = students.find(s => s.id === currentCallStudentId);
+      const outcome = document.getElementById('callOutcome').value;
+      const notes = document.getElementById('callNotes').value.trim();
+      const today = new Date().toISOString().split('T')[0];
+
+      if (student) {
+        student.lastCall = today;
+        const newLogEntry = `${today}: [${outcome}] ${notes || 'Counseling outreach call completed.'}`;
+        if (!student.history) student.history = [];
+        student.history.unshift(newLogEntry);
+
+        if (outcome.includes('Renewed')) {
+          student.category = 'High Retention';
+          student.engagement = Math.min(10, student.engagement + 2);
+        } else if (outcome.includes('Discontinued')) {
+          student.category = 'Churned';
+        }
+
+        saveToLocalStorage();
+        showToast(`Call log saved for ${student.name}`);
+        refreshAllViews();
+      }
+
+      closeCallModal();
+    }
+
+    function triggerBulkCounselingNotice() {
+      showToast('Bulk retention reminders issued to at-risk cohort!');
+    }
+
+    function refreshAllViews() {
+      renderKPIs();
+      renderCharts();
+      filterStudents();
+      renderAlertCenter();
+      renderQuickRenewals();
+      renderMasterCallLogs();
+    }
+
+    function exportToCSV() {
+      if (students.length === 0) {
+        showToast('No student records available for export', 'warning');
+        return;
+      }
+
+      let csv = 'Student ID,Name,Phone,Course Track,Attendance %,Test Avg %,Engagement Score,Category,Expiry Date,Last Contact Date,Course Fee (INR)\n';
+      students.forEach(s => {
+        csv += `"${s.id}","${s.name}","${s.phone}","${s.course}",${s.attendance},${s.testAvg || 75},${s.engagement},"${s.category}","${s.expiry}","${s.lastCall || ''}",${s.fee || 25000}\n`;
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.setAttribute('href', url);
+      a.setAttribute('download', `EduPulse_Student_Retention_CRM_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      showToast('Exported student CRM records to CSV!');
+    }
+  </script>
+</body>
+</html>
